@@ -1,0 +1,11 @@
+[package]
+
+name    = "trampoline"
+version = "0.0.0"
+authors = [ "Darin Morrison <darinmorrison+git@gmail.com>" ]
+
+[dev-dependencies.quickcheck]
+git = "https://github.com/BurntSushi/quickcheck"
+
+[dev-dependencies.quickcheck_macros]
+git = "https://github.com/BurntSushi/quickcheck"
