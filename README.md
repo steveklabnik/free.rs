@@ -6,7 +6,7 @@ Trampolines, etc. in Rust
 
 ## Documentation
 
-See the API documentation [here](http://darinmorrison.github.io/free.rs/doc/free/).
+See the API documentation [here](http://www.rust-ci.org/darinmorrison/free.rs/doc/free/).
 
 ## Requirements
 
