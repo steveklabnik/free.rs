@@ -1,4 +1,4 @@
-#![crate_name="trampoline"]
+#![crate_name="free"]
 #![crate_type="lib"]
 
 #![license = "MIT"]

@@ -1,6 +1,6 @@
 [package]
 
-name    = "trampoline"
+name    = "free"
 version = "0.0.0"
 authors = [ "Darin Morrison <darinmorrison+git@gmail.com>" ]
 
