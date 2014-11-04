@@ -4,7 +4,7 @@ name    = "trampoline"
 version = "0.0.0"
 authors = [ "Darin Morrison <darinmorrison+git@gmail.com>" ]
 
-[dependencies.num]
+[dev-dependencies.num]
 git = "https://github.com/rust-lang/num"
 
 [dev-dependencies.quickcheck]
