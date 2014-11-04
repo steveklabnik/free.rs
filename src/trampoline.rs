@@ -11,7 +11,7 @@ pub fn force<'a,A>(f:F<'a,A>) -> A {
     f()
 }
 
-enum Free<'a,A> {
+pub enum Free<'a,A> {
     Pure(A),
     Roll(F<'a,Free<'a,A>>),
 }
