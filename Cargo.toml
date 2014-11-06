@@ -2,7 +2,7 @@
 
 name    = "free"
 version = "0.0.0"
-authors = [ "Darin Morrison <darinmorrison+git@gmail.com>" ]
+authors = [ "Darin Morrison <darinmorrison+epsilonz@gmail.com>" ]
 
 [dev-dependencies.num]
 git = "https://github.com/rust-lang/num"

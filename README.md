@@ -2,11 +2,11 @@
 
 Trampolines, etc. in Rust
 
-[![build status](https://api.travis-ci.org/darinmorrison/free.rs.svg?branch=master)](https://travis-ci.org/darinmorrison/free.rs)
+[![build status](https://api.travis-ci.org/epsilonz/free.rs.svg?branch=master)](https://travis-ci.org/epsilonz/free.rs)
 
 ## Documentation
 
-See the API documentation [here](http://www.rust-ci.org/darinmorrison/free.rs/doc/free/).
+See the API documentation [here](http://www.rust-ci.org/epsilonz/free.rs/doc/free/).
 
 ## Requirements
 
