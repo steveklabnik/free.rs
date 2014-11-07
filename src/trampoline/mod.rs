@@ -6,7 +6,7 @@
 
 pub type F<'a,A> = proc():'a -> A;
 
-#[inline]
+#[inline(always)]
 pub fn force<'a,A>(f:F<'a,A>) -> A {
     f()
 }
