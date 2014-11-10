@@ -4,4 +4,6 @@
 #![license = "MIT"]
 #![doc(html_root_url = "http://www.rust-ci.org/epsilonz/free.rs/doc/free/")]
 
-pub mod trampoline;
+#![feature(macro_rules)]
+#![feature(unboxed_closures)]
+pub mod free;
