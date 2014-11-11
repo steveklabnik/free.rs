@@ -158,12 +158,12 @@ macro_rules! free(
             #[inline]
             pub fn bounce<F>(self, f: F) ->    $Free<'a, $($ctx,)* X>
                 where
-                    F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
-                                           ->  $Free<'a, $($ctx,)* X>,
+                    F: FnOnce($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
+                                               ->  $Free<'a, $($ctx,)* X>,
             {
                 match self.resume() {
                     Ok (a) => Pure(a),
-                    Err(t) => f.call((t,)),
+                    Err(t) => f.call_once((t,)),
                 }
             }
 
@@ -171,6 +171,7 @@ macro_rules! free(
             #[inline]
             fn go<F>(mut self, f: F) -> X
                 where
+                    // f must be a Fn since we may call it many times
                     F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
                                            ->  $Free<'a, $($ctx,)* X>,
             {
