@@ -1,4 +1,4 @@
-use super::{
+use free_macros::{
     Abs,
     FunOnce,
 };
