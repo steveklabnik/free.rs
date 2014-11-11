@@ -96,7 +96,7 @@ macro_rules! free(
                     }
                 }
 
-                // safe because we only ever coerce (m, f) with compatible types
+                // safe because we only coerce (m, f) with compatible types
                 unsafe {
                     match self {
                         Subs(m, g) =>
@@ -127,7 +127,13 @@ macro_rules! free(
             }
 
             #[inline]
-            pub fn resume(self) -> Result<X, $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>> {
+            pub fn resume(self) ->
+                Result
+                    <
+                        X,
+                        $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>
+                    >
+                {
                 match self {
                     Pure(a) => Ok (a),
                     Roll(t) => Err(t),
@@ -150,10 +156,10 @@ macro_rules! free(
             }
 
             #[inline]
-            pub fn bounce<F>(self, f: F) -> $Free<'a, $($ctx,)* X>
+            pub fn bounce<F>(self, f: F) ->    $Free<'a, $($ctx,)* X>
                 where
-                    F:      Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
-                        ->  $Free<'a, $($ctx,)* X>,
+                    F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
+                                           ->  $Free<'a, $($ctx,)* X>,
             {
                 match self.resume() {
                     Ok (a) => Pure(a),
@@ -165,8 +171,8 @@ macro_rules! free(
             #[inline]
             fn go<F>(mut self, f: F) -> X
                 where
-                F:      Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
-                    ->  $Free<'a, $($ctx,)* X>,
+                    F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
+                                           ->  $Free<'a, $($ctx,)* X>,
             {
                 let acc: X;
                 loop { match self.resume() {
