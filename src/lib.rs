@@ -15,7 +15,6 @@ macro_rules! free_monad(
         struct Abs(*const u8);
         type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
-        #[allow(dead_code)]
         enum Free<'a, $($ctx,)* X> {
             Pure(X),
             Roll($S<'a, $($ctx,)* Box<Free<'a, $($ctx,)* X>>>),
