@@ -1,6 +1,6 @@
 # free.rs
 
-Trampolines, etc. in Rust
+Macro-based free monads in Rust
 
 [![build status](https://api.travis-ci.org/epsilonz/free.rs.svg?branch=master)](https://travis-ci.org/epsilonz/free.rs)
 
