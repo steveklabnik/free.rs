@@ -8,56 +8,44 @@
 #![feature(overloaded_calls)]
 #![feature(unboxed_closures)]
 
-pub struct Abs(*const u8);
-pub type FunOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
-
 #[macro_export]
 macro_rules! free_monad(
     ($Free:ident, $S:ident, $smap:ident, [ $($ctx:ident,)* ]) =>
     {
-        pub enum $Free<'a, $($ctx,)* X> {
+        struct Abs(*const u8);
+        type FunOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
+
+        enum $Free<'a, $($ctx,)* X> {
             Pure(X),
             Roll($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
             Subs(
-                FunOnce<'a,     (), $Free<'a, $($ctx,)* Abs>>,
-                FunOnce<'a, (Abs,), $Free<'a, $($ctx,)*   X>>,
+                FunOnce<'a, (), $Free<'a, $($ctx,)* Abs>>,
+                FunOnce<'a, (Abs,), $Free<'a, $($ctx,)* X>>,
             ),
         }
 
         impl<'a $(,$ctx:'a)*> $Free<'a, $($ctx,)* Abs> {
             #[allow(dead_code)]
             #[inline]
-            fn map_abs<Y:'a, F:'a>(
-                self,
-                f: FunOnce<'a, (Abs,),   Y>,
-            ) ->     $Free<'a, $($ctx,)* Y>
-            {
+            fn map_abs<Y:'a, F:'a>(self, f: FunOnce<'a, (Abs,), Y>,) -> $Free<'a, $($ctx,)* Y> {
                 self.bind_abs(box move |:x| Pure(f.call_once((x,))))
             }
 
             // NOTE: keep this in sync with bind
             #[inline]
-            fn bind_abs<Y:'a>(
-                self,
-                f: FunOnce<'a, (Abs,),
-                    $Free<'a, $($ctx,)* Y>>,
-            ) ->    $Free<'a, $($ctx,)* Y>
-            {
+            fn bind_abs<Y:'a>(self, f: FunOnce<'a, (Abs,), $Free<'a, $($ctx,)* Y>>) -> $Free<'a, $($ctx,)* Y> {
                 match self {
                     Subs(m, g) => Subs(m, box move |:x| {
-                        Subs(box move |:| {
-                            g.call_once((x,))
-                        }, f)
+                        Subs(box move |:| { g.call_once((x,)) }, f)
                     }),
-                    _          => Subs(box move |:| { self }, f),
+                    _ => Subs(box move |:| { self }, f),
                 }
             }
         }
 
         impl<'a $(,$ctx:'a)*, X:'a> $Free<'a, $($ctx,)* X> {
             #[inline]
-            pub fn map<Y:'a, F:'a>(self, f: F)
-                                 -> $Free<'a, $($ctx,)* Y>
+            fn map<Y:'a, F:'a>(self, f: F) -> $Free<'a, $($ctx,)* Y>
                 where
                     F: FnOnce(X) -> Y,
             {
@@ -66,16 +54,14 @@ macro_rules! free_monad(
 
             // NOTE: keep this in sync with bind_abs
             #[inline]
-            pub fn bind<Y:'a, F:'a>(self, f: F)
-                                 -> $Free<'a, $($ctx,)* Y>
+            fn bind<Y:'a, F:'a>(self, f: F) -> $Free<'a, $($ctx,)* Y>
                 where
                     F: FnOnce(X) -> $Free<'a, $($ctx,)* Y>,
             {
                 // calls std::mem::transmute
                 #[inline(always)]
                 unsafe
-                fn coe_lhs<'a $(,$ctx:'a)*, X:'a>(m: $Free<'a, $($ctx,)* X  >)
-                                                  -> $Free<'a, $($ctx,)* Abs>
+                fn coe_lhs<'a $(,$ctx:'a)*, X:'a>(m: $Free<'a, $($ctx,)* X>) -> $Free<'a, $($ctx,)* Abs>
                 {
                     m.map(|:x| ::std::mem::transmute(box x))
                 }
@@ -83,11 +69,9 @@ macro_rules! free_monad(
                 // calls std::mem::transmute
                 #[inline(always)]
                 unsafe
-                fn coe_rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(
-                    f: F
-                ) -> FunOnce<'a, (Abs,), $Free<'a, $($ctx,)* Y>>
+                fn coe_rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(f: F) -> FunOnce<'a, (Abs,), $Free<'a, $($ctx,)* Y>>
                     where
-                        F: FnOnce(X) ->  $Free<'a, $($ctx,)* Y>,
+                        F: FnOnce(X) -> $Free<'a, $($ctx,)* Y>,
                 {
                     box move |:ox| {
                         let box x: Box<X> = ::std::mem::transmute(ox);
@@ -104,17 +88,13 @@ macro_rules! free_monad(
                                     coe_lhs(g.call_once((x,)))
                                 }, coe_rhs(f))
                             }),
-                        _          =>
-                            Subs(
-                                box move |:| { coe_lhs(self) },
-                                coe_rhs(f)
-                            ),
+                        _ => Subs(box move |:| { coe_lhs(self) }, coe_rhs(f)),
                     }
                 }
             }
 
             #[inline]
-            pub fn fold<Y, P, R>(self, p: P, r: R) -> Y
+            fn fold<Y, P, R>(self, p: P, r: R) -> Y
                 where
                     P: Fn(X) -> Y,
                     R: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>) -> Y,
@@ -126,13 +106,7 @@ macro_rules! free_monad(
             }
 
             #[inline]
-            pub fn resume(self) ->
-                Result
-                    <
-                        X,
-                        $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>
-                    >
-                {
+            fn resume(self) -> Result<X, $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>> {
                 match self {
                     Pure(a) => Ok (a),
                     Roll(t) => Err(t),
@@ -155,10 +129,9 @@ macro_rules! free_monad(
             }
 
             #[inline]
-            pub fn bounce<F>(self, f: F) ->    $Free<'a, $($ctx,)* X>
+            fn bounce<F>(self, f: F) -> $Free<'a, $($ctx,)* X>
                 where
-                    F: FnOnce($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
-                                               ->  $Free<'a, $($ctx,)* X>,
+                    F: FnOnce($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>) -> $Free<'a, $($ctx,)* X>,
             {
                 match self.resume() {
                     Ok (a) => Pure(a),
@@ -171,8 +144,7 @@ macro_rules! free_monad(
             fn go<F>(mut self, f: F) -> X
                 where
                     // f must be a Fn since we may call it many times
-                    F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
-                                           ->  $Free<'a, $($ctx,)* X>,
+                    F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>) -> $Free<'a, $($ctx,)* X>,
             {
                 let acc: X;
                 loop { match self.resume() {
