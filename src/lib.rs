@@ -11,9 +11,8 @@
 pub struct Abs(*const u8);
 pub type FunOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
-#[doc(hidden)]
 #[macro_export]
-macro_rules! __free_impl(
+macro_rules! free_monad(
     ($Free:ident, $S:ident, $smap:ident, [ $($ctx:ident,)* ]) =>
     {
         pub enum $Free<'a, $($ctx,)* X> {
@@ -183,13 +182,5 @@ macro_rules! __free_impl(
                 acc
             }
         }
-    };
-)
-
-#[macro_export]
-macro_rules! free(
-    ($Free:ident, $S:ident, $smap:ident, [ $($ctx:ident,)* ]) =>
-    {
-        __free_impl!($Free, $S, $smap, [ $($ctx,)* ])
     };
 )
