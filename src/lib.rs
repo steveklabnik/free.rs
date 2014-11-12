@@ -11,6 +11,5 @@
 #[phase(link, plugin)]
 extern crate free_macros;
 
-pub mod trampoline;
 pub mod sink;
 pub mod source;
