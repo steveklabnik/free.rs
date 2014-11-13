@@ -16,8 +16,8 @@ macro_rules! free_monad(
         pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
         pub enum $Free<'a, $($ctx,)* X> {
-            Pure(X),
-            Roll($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
+            Leaf(X),
+            Nest($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
             Subs(
                 BFnOnce<'a, (), $Free<'a, $($ctx,)* Abs>>,
                 BFnOnce<'a, (Abs,), $Free<'a, $($ctx,)* X>>,
@@ -47,8 +47,8 @@ macro_rules! free_monad(
                 unsafe
                 fn lhs<'a $(,$ctx:'a)*, X:'a>(m: $Free<'a, $($ctx,)* X>) -> $Free<'a, $($ctx,)* Abs> {
                     match m {
-                        Pure(a) => Pure(::std::mem::transmute(box a)),
-                        Roll(t) => Roll($smap(t, |:m2: Box<$Free<'a, $($ctx,)* _>> | box lhs(*m2))),
+                        Leaf(a) => Leaf(::std::mem::transmute(box a)),
+                        Nest(t) => Nest($smap(t, |:m2: Box<$Free<'a, $($ctx,)* _>> | box lhs(*m2))),
                         Subs(m, f) => Subs(m, box move |:x| lhs(f.call_once((x,)))),
                     }
                 }
@@ -75,12 +75,12 @@ macro_rules! free_monad(
             #[inline]
             fn resume(mut self) -> Result<X, $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>> {
                 loop { match self {
-                    Pure(a) => return Ok (a),
-                    Roll(t) => return Err(t),
+                    Leaf(a) => return Ok (a),
+                    Nest(t) => return Err(t),
                     Subs(ma, f) => {
                         match ma.call_once(()) {
-                            Pure(a) => { self = f.call_once((a,)) },
-                            Roll(t) => return Err($smap(t, move |:m:Box<$Free<'a, $($ctx,)* _>> | box m._bind(f))),
+                            Leaf(a) => { self = f.call_once((a,)) },
+                            Nest(t) => return Err($smap(t, move |:m:Box<$Free<'a, $($ctx,)* _>> | box m._bind(f))),
                             Subs(mb, g) => { self = mb.call_once(())._bind(box move |:pb| g.call_once((pb,))._bind(f)) },
                         }
                     },
