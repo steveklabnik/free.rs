@@ -66,7 +66,7 @@ macro_rules! free_monad(
                             Leaf(::std::mem::transmute(box a))
                         },
                         Nest(t) => {
-                            Nest($smap(t, |:m2: Box<$Free<'a, $($ctx,)* _>>|
+                            Nest($smap(t, |:m2: Box<_>|
                                 box lhs(*m2)))
                         },
                         Subs(m, f) => {
