@@ -12,22 +12,22 @@
 macro_rules! free_monad(
     ($Free:ident, $S:ident, $smap:ident, [ $($ctx:ident,)* ]) =>
     {
-        pub struct Abs(*const u8);
+        pub struct Opaque(*const u8);
         pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
         pub enum $Free<'a, $($ctx,)* X> {
             Leaf(X),
             Nest($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
             Subs(
-                BFnOnce<'a, (), $Free<'a, $($ctx,)* Abs>>,
-                BFnOnce<'a, (Abs,), $Free<'a, $($ctx,)* X>>,
+                BFnOnce<'a, (), $Free<'a, $($ctx,)* Opaque>>,
+                BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* X>>,
             ),
         }
 
-        impl<'a $(,$ctx:'a)*> $Free<'a, $($ctx,)* Abs> {
+        impl<'a $(,$ctx:'a)*> $Free<'a, $($ctx,)* Opaque> {
             // NOTE: keep this in sync with bind
             #[inline]
-            fn _bind<Y:'a>(self, f: BFnOnce<'a, (Abs,), $Free<'a, $($ctx,)* Y>>) -> $Free<'a, $($ctx,)* Y> {
+            fn _bind<Y:'a>(self, f: BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* Y>>) -> $Free<'a, $($ctx,)* Y> {
                 match self {
                     Subs(m, g) => Subs(m, box move |:x| Subs(box move |:| g.call_once((x,)), f)),
                     _ => Subs(box move |:| self, f),
@@ -45,7 +45,7 @@ macro_rules! free_monad(
                 // calls std::mem::transmute
                 #[inline(always)]
                 unsafe
-                fn lhs<'a $(,$ctx:'a)*, X:'a>(m: $Free<'a, $($ctx,)* X>) -> $Free<'a, $($ctx,)* Abs> {
+                fn lhs<'a $(,$ctx:'a)*, X:'a>(m: $Free<'a, $($ctx,)* X>) -> $Free<'a, $($ctx,)* Opaque> {
                     match m {
                         Leaf(a) => Leaf(::std::mem::transmute(box a)),
                         Nest(t) => Nest($smap(t, |:m2: Box<$Free<'a, $($ctx,)* _>> | box lhs(*m2))),
@@ -56,7 +56,7 @@ macro_rules! free_monad(
                 // calls std::mem::transmute
                 #[inline(always)]
                 unsafe
-                fn rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(f: F) -> BFnOnce<'a, (Abs,), $Free<'a, $($ctx,)* Y>>
+                fn rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(f: F) -> BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* Y>>
                     where
                         F: FnOnce(X) -> $Free<'a, $($ctx,)* Y>,
                 {
