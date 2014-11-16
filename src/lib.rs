@@ -91,18 +91,17 @@ macro_rules! free_monad(
                 }
 
                 // safe because we only coerce (m, f) with compatible types
-                unsafe {
-                    match self {
-                        Subs(m, g) => {
-                            Subs(m, box move |:x|
-                                Subs(box move |:|
-                                    lhs(g.call_once((x,))), rhs(f)))
-                        },
-                        _ => {
+                match self {
+                    Subs(m, g) => {
+                        Subs(m, box move |:x| unsafe {
                             Subs(box move |:|
-                                lhs(self), rhs(f))
-                        },
-                    }
+                                lhs(g.call_once((x,))), rhs(f))
+                        })
+                    },
+                    _ => { unsafe {
+                        Subs(box move |:|
+                            lhs(self), rhs(f))
+                    }},
                 }
             }
 
