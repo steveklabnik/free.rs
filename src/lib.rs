@@ -16,8 +16,11 @@ macro_rules! free_monad(
         pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
         pub enum $Free<'a, $($ctx,)* X> {
+            // Pure : a -> Free f a
             Leaf(X),
+            // Roll : f (Free f a) -> Free f a
             Nest($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
+            // Bind : (() -> Free f b) -> (b -> Free f a) -> Free f a
             Subs(
                 BFnOnce<'a, (), $Free<'a, $($ctx,)* Opaque>>,
                 BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* X>>,
