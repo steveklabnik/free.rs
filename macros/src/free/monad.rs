@@ -4,7 +4,7 @@ macro_rules! free_monad(
     {
 
         pub struct Opaque(*const u8);
-        pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
+        // pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
         // Leaf ~ Pure : a -> Free f a
         // Nest ~ Roll : f (Free f a) -> Free f a
@@ -14,8 +14,8 @@ macro_rules! free_monad(
             Leaf(X),
             Nest($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
             Subs( // Coyoneda f a ~ forall i. (f i, i -> a)
-                BFnOnce<'a, (), $Free<'a, $($ctx,)* Opaque>>,
-                BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* X>>,
+                Box<FnOnce<(), $Free<'a, $($ctx,)* Opaque>> + 'a>,
+                Box<FnOnce<(Opaque,), $Free<'a, $($ctx,)* X>> + 'a>,
             ),
         }
 
@@ -24,7 +24,7 @@ macro_rules! free_monad(
             #[inline]
             fn _bind<Y:'a>(
                 self,
-                f: BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* Y>>,
+                f: Box<FnOnce<(Opaque,), $Free<'a, $($ctx,)* Y>> + 'a>,
             ) -> $Free<'a, $($ctx,)* Y> {
                 match self {
                     $Free::Subs(m, g) => {
@@ -73,7 +73,7 @@ macro_rules! free_monad(
                 unsafe
                 fn rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(
                     f: F,
-                ) -> BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* Y>>
+                ) -> Box<FnOnce<(Opaque,), $Free<'a, $($ctx,)* Y>> + 'a>
                     where
                         F: FnOnce(X) -> $Free<'a, $($ctx,)* Y>,
                 {
