@@ -22,7 +22,7 @@ macro_rules! free_monad(
         pub enum $Free<'a, $($ctx,)* X> {
             Leaf(X),
             Nest($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
-            Subs(
+            Subs( // Coyoneda f a ~ forall i. (f i, i -> a)
                 BFnOnce<'a, (), $Free<'a, $($ctx,)* Opaque>>,
                 BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* X>>,
             ),
