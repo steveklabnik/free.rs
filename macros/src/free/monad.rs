@@ -1,81 +1,80 @@
 #[macro_export]
-macro_rules! free_monad(
-    ($Free:ident, $S:ident, $smap:ident, [ $($ctx:ident,)* ]) =>
+macro_rules! monad(
+    ($M:ident, $Sig:ident, $sig_map:ident, [ $($ctx:ident,)* ]) =>
     {
 
-        pub struct Opaque(*const u8);
-        // pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
+        struct Opaque(*const u8);
 
-        // Leaf ~ Pure : a -> Free f a
-        // Nest ~ Roll : f (Free f a) -> Free f a
-        // Subs ~ Bind : (() -> Free f b) -> (b -> Free f a) -> Free f a
+        // Leaf ~ Pure : a -> _M f a
+        // Nest ~ Roll : f (_M f a) -> _M f a
+        // Subs ~ Bind : (() -> _M f b) -> (b -> _M f a) -> _M f a
 
-        pub enum $Free<'a, $($ctx,)* X> {
+        enum _M<'a, $($ctx,)* X> {
             Leaf(X),
-            Nest($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>),
+            Nest($Sig<'a, $($ctx,)* Box<_M<'a, $($ctx,)* X>>>),
             Subs( // Coyoneda f a ~ forall i. (f i, i -> a)
-                Box<FnOnce<(), $Free<'a, $($ctx,)* Opaque>> + 'a>,
-                Box<FnOnce<(Opaque,), $Free<'a, $($ctx,)* X>> + 'a>,
+                Box<FnOnce<(), _M<'a, $($ctx,)* Opaque>> + 'a>,
+                Box<FnOnce<(Opaque,), _M<'a, $($ctx,)* X>> + 'a>,
             ),
         }
 
-        impl<'a $(,$ctx:'a)*> $Free<'a, $($ctx,)* Opaque> {
+        impl<'a $(,$ctx:'a)*> _M<'a, $($ctx,)* Opaque> {
             // NOTE: keep this in sync with bind
             #[inline]
             fn _bind<Y:'a>(
                 self,
-                f: Box<FnOnce<(Opaque,), $Free<'a, $($ctx,)* Y>> + 'a>,
-            ) -> $Free<'a, $($ctx,)* Y> {
+                f: Box<FnOnce<(Opaque,), _M<'a, $($ctx,)* Y>> + 'a>,
+            ) -> _M<'a, $($ctx,)* Y> {
                 match self {
-                    $Free::Subs(m, g) => {
-                        $Free::Subs(m, box move |:x|
-                            $Free::Subs(box move |:|
+                    _M::Subs(m, g) => {
+                        _M::Subs(m, box move |:x|
+                            _M::Subs(box move |:|
                                 g.call_once((x,)), f))
                     },
                     _ => {
-                        $Free::Subs(box move |:|
+                        _M::Subs(box move |:|
                             self, f)
                     },
                 }
             }
         }
 
-        impl<'a $(,$ctx:'a)*, X:'a> $Free<'a, $($ctx,)* X> {
+        impl<'a $(,$ctx:'a)*, X:'a> _M<'a, $($ctx,)* X> {
             // NOTE: keep this in sync with _bind
             #[inline]
-            pub fn bind<Y:'a, F:'a>(self, f: F) -> $Free<'a, $($ctx,)* Y>
+            fn bind<Y:'a, F:'a>(self, f: F) -> _M<'a, $($ctx,)* Y>
                 where
-                    F: FnOnce(X) -> $Free<'a, $($ctx,)* Y>,
+                F: FnOnce(X) -> _M<'a, $($ctx,)* Y>,
             {
                 // calls std::mem::transmute
-                #[inline(always)]
+                #[inline]
                 unsafe
                 fn lhs<'a $(,$ctx:'a)*, X:'a>(
-                    m: $Free<'a, $($ctx,)* X>,
-                ) -> $Free<'a, $($ctx,)* Opaque> {
+                    m: _M<'a, $($ctx,)* X>,
+                ) -> _M<'a, $($ctx,)* Opaque> {
                     match m {
-                        $Free::Leaf(a) => {
-                            $Free::Leaf(::std::mem::transmute(box a))
+                        _M::Leaf(a) => {
+                            _M::Leaf(::std::mem::transmute(box a))
                         },
-                        $Free::Nest(t) => {
-                            $Free::Nest($smap(t, |:m2: Box<_>|
+                        _M::Nest(t) => {
+                            _M::Nest($sig_map(t, |:m2: Box<_>|
                                 box lhs(*m2)))
                         },
-                        $Free::Subs(m, f) => {
-                            $Free::Subs(m, box move |:x|
+                        _M::Subs(m, f) => {
+                            _M::Subs(m, box move |:x|
                                 lhs(f.call_once((x,))))
                         },
                     }
                 }
 
                 // calls std::mem::transmute
-                #[inline(always)]
+                #[inline]
                 unsafe
                 fn rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(
                     f: F,
-                ) -> Box<FnOnce<(Opaque,), $Free<'a, $($ctx,)* Y>> + 'a>
+                ) -> Box<FnOnce<(Opaque,), _M<'a, $($ctx,)* Y>> + 'a>
                     where
-                        F: FnOnce(X) -> $Free<'a, $($ctx,)* Y>,
+                    F: FnOnce(X) -> _M<'a, $($ctx,)* Y>,
                 {
                     box move |:ox|
                         f.call_once((*::std::mem::transmute::<_, Box<_>>(ox),))
@@ -83,42 +82,41 @@ macro_rules! free_monad(
 
                 // safe because we only coerce (m, f) with compatible types
                 match self {
-                    $Free::Subs(m, g) => {
-                        $Free::Subs(m, box move |:x| unsafe {
-                            $Free::Subs(box move |:|
+                    _M::Subs(m, g) => {
+                        _M::Subs(m, box move |:x| unsafe {
+                            _M::Subs(box move |:|
                                 lhs(g.call_once((x,))), rhs(f))
                         })
                     },
                     _ => { unsafe {
-                        $Free::Subs(box move |:|
+                        _M::Subs(box move |:|
                             lhs(self), rhs(f))
                     }},
                 }
             }
 
-            #[allow(dead_code)]
             #[inline]
-            pub fn resume(
+            fn resume(
                 mut self,
-            ) -> Result<X, $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>> {
+            ) -> Result<X, $Sig<'a, $($ctx,)* Box<_M<'a, $($ctx,)* X>>>> {
                 loop { match self {
-                    $Free::Leaf(a) => {
-                        return Ok (a)
+                    _M::Leaf(a) => {
+                        return Ok(a)
                     },
-                    $Free::Nest(t) => {
+                    _M::Nest(t) => {
                         return Err(t)
                     },
-                    $Free::Subs(ma, f) => {
+                    _M::Subs(ma, f) => {
                         match ma.call_once(()) {
-                            $Free::Leaf(a) => {
+                            _M::Leaf(a) => {
                                 self = f.call_once((a,))
                             },
-                            $Free::Nest(t) => {
-                                return Err($smap(t,
-                                    move |:m:Box<$Free<'a, $($ctx,)* _>>|
+                            _M::Nest(t) => {
+                                return Err($sig_map(t,
+                                    move |:m:Box<_M<'a, $($ctx,)* _>>|
                                         box m._bind(f)))
                             },
-                            $Free::Subs(mb, g) => {
+                            _M::Subs(mb, g) => {
                                 self = mb
                                     .call_once(())
                                     ._bind(box move |:pb| g
@@ -130,16 +128,15 @@ macro_rules! free_monad(
                 }}
             }
 
-            #[allow(dead_code)]
             #[inline]
-            pub fn go<F>(mut self, f: F) -> X
+            fn go<F>(mut self, f: F) -> X
                 where
-                    // f must be a Fn since we may call it many times
-                    F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)
-                        -> $Free<'a, $($ctx,)* X>,
+                // f must be a Fn since we may call it many times
+                F: Fn($Sig<'a, $($ctx,)* Box<_M<'a, $($ctx,)* X>>>)
+                    -> _M<'a, $($ctx,)* X>,
             {
                 loop { match self.resume() {
-                    Ok (a) => {
+                    Ok(a) => {
                         return a
                     },
                     Err(t) => {
@@ -147,6 +144,98 @@ macro_rules! free_monad(
                     },
                 }}
             }
+
+        }
+
+        pub struct $M<'a $(,$ctx:'a)*, X:'a>(_M<'a, $($ctx,)* X>);
+
+        impl<'a $(,$ctx:'a)*, X:'a> $M<'a, $($ctx,)* X> {
+            #[inline]
+            pub fn map<Y:'a, F:'a>(self, f: F) -> $M<'a, $($ctx,)* Y>
+                where
+                F: FnOnce(X) -> Y,
+            {
+                let $M(m) = self;
+                $M(m.bind(move |:x| _M::Leaf(f(x))))
+            }
+
+            #[inline]
+            pub fn point(a: X) -> $M<'a, $($ctx,)* X> {
+                $M(_M::Leaf(a))
+            }
+
+            // NOTE: keep this in sync with _bind
+            #[inline]
+            pub fn bind<Y:'a, F:'a>(self, f: F) -> $M<'a, $($ctx,)* Y>
+                where
+                F: FnOnce(X) -> $M<'a, $($ctx,)* Y>,
+            {
+                let $M(m0) = self;
+                $M(m0.bind(move |:x| {
+                    let $M(m1) = f(x);
+                    m1
+                }))
+            }
+
+            #[inline]
+            pub fn seq<Y:'a>(self, m: $M<'a, $($ctx,)* Y>) -> $M<'a, $($ctx,)* Y> {
+                self.bind(move |:_| m)
+            }
+
+            #[inline]
+            pub fn resume(self) -> Result<X, $Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>> {
+                let $M(m0) = self;
+                match m0.resume() {
+                    Ok(a) => {
+                        Ok(a)
+                    },
+                    Err(sbmx) => {
+                        Err($sig_map(sbmx, |:bmx: Box<_M<'a, $($ctx,)* _>>| box $M(*bmx)))
+                    },
+                }
+            }
+
+            #[inline]
+            pub fn go<F>(self, f: F) -> X
+                where
+                // f must be a Fn since we may call it many times
+                F: Fn($Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>) -> $M<'a, $($ctx,)* X>,
+            {
+                let $M(m0) = self;
+                m0.go(|&:sbmx| {
+                    let $M(m1) = f($sig_map(sbmx, |:bmx:Box<_M<'a, $($ctx,)* _>>| {
+                        box $M(*bmx)
+                    }));
+                    m1
+                })
+            }
+
+        }
+
+        #[inline]
+        pub fn point<'a $(,$ctx:'a)*, X:'a>(a: X) -> $M<'a, $($ctx,)* X> {
+            $M::point(a)
+        }
+
+        #[inline]
+        pub fn bind<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(
+            m: $M<'a, $($ctx,)* X>,
+            f: F,
+        ) -> $M<'a, $($ctx,)* Y>
+            where
+            F: FnOnce(X) -> $M<'a, $($ctx,)* Y>,
+        {
+            m.bind(f)
+        }
+
+        #[inline]
+        pub fn wrap<'a $(,$ctx:'a)*, X:'a>(
+            sbmx: $Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>
+        ) -> $M<'a, $($ctx,)* X> {
+            $M(_M::Nest($sig_map(sbmx, |:bmx: Box<$M<'a, $($ctx,)* _>>| {
+                let box $M(m) = bmx;
+                box m
+            })))
         }
 
     };
