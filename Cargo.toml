@@ -4,6 +4,9 @@ name    = "free"
 version = "0.0.0"
 authors = [ "Darin Morrison <darinmorrison+epsilonz@gmail.com>" ]
 
+[dependencies.free_macros]
+path = "macros"
+
 # [dev-dependencies.quickcheck]
 # git = "https://github.com/BurntSushi/quickcheck"
 

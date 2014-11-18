@@ -1,0 +1,10 @@
+[package]
+
+name    = "free_macros"
+version = "0.0.0"
+authors = [ "Darin Morrison <darinmorrison+epsilonz@gmail.com>" ]
+
+[lib]
+name   = "free_macros"
+path   = "src/lib.rs"
+plugin = true
