@@ -2,6 +2,7 @@
 macro_rules! free_monad(
     ($Free:ident, $S:ident, $smap:ident, [ $($ctx:ident,)* ]) =>
     {
+
         pub struct Opaque(*const u8);
         pub type BFnOnce<'a, A, B> = Box<FnOnce<A, B> + 'a>;
 
