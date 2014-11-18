@@ -36,13 +36,13 @@ macro_rules! free_monad(
                 f: BFnOnce<'a, (Opaque,), $Free<'a, $($ctx,)* Y>>,
             ) -> $Free<'a, $($ctx,)* Y> {
                 match self {
-                    Subs(m, g) => {
-                        Subs(m, box move |:x|
-                            Subs(box move |:|
+                    $Free::Subs(m, g) => {
+                        $Free::Subs(m, box move |:x|
+                            $Free::Subs(box move |:|
                                 g.call_once((x,)), f))
                     },
                     _ => {
-                        Subs(box move |:|
+                        $Free::Subs(box move |:|
                             self, f)
                     },
                 }
@@ -63,15 +63,15 @@ macro_rules! free_monad(
                     m: $Free<'a, $($ctx,)* X>,
                 ) -> $Free<'a, $($ctx,)* Opaque> {
                     match m {
-                        Leaf(a) => {
-                            Leaf(::std::mem::transmute(box a))
+                        $Free::Leaf(a) => {
+                            $Free::Leaf(::std::mem::transmute(box a))
                         },
-                        Nest(t) => {
-                            Nest($smap(t, |:m2: Box<_>|
+                        $Free::Nest(t) => {
+                            $Free::Nest($smap(t, |:m2: Box<_>|
                                 box lhs(*m2)))
                         },
-                        Subs(m, f) => {
-                            Subs(m, box move |:x|
+                        $Free::Subs(m, f) => {
+                            $Free::Subs(m, box move |:x|
                                 lhs(f.call_once((x,))))
                         },
                     }
@@ -92,41 +92,42 @@ macro_rules! free_monad(
 
                 // safe because we only coerce (m, f) with compatible types
                 match self {
-                    Subs(m, g) => {
-                        Subs(m, box move |:x| unsafe {
-                            Subs(box move |:|
+                    $Free::Subs(m, g) => {
+                        $Free::Subs(m, box move |:x| unsafe {
+                            $Free::Subs(box move |:|
                                 lhs(g.call_once((x,))), rhs(f))
                         })
                     },
                     _ => { unsafe {
-                        Subs(box move |:|
+                        $Free::Subs(box move |:|
                             lhs(self), rhs(f))
                     }},
                 }
             }
 
+            #[allow(dead_code)]
             #[inline]
-            fn resume(
+            pub fn resume(
                 mut self,
             ) -> Result<X, $S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>> {
                 loop { match self {
-                    Leaf(a) => {
+                    $Free::Leaf(a) => {
                         return Ok (a)
                     },
-                    Nest(t) => {
+                    $Free::Nest(t) => {
                         return Err(t)
                     },
-                    Subs(ma, f) => {
+                    $Free::Subs(ma, f) => {
                         match ma.call_once(()) {
-                            Leaf(a) => {
+                            $Free::Leaf(a) => {
                                 self = f.call_once((a,))
                             },
-                            Nest(t) => {
+                            $Free::Nest(t) => {
                                 return Err($smap(t,
                                     move |:m:Box<$Free<'a, $($ctx,)* _>>|
                                         box m._bind(f)))
                             },
-                            Subs(mb, g) => {
+                            $Free::Subs(mb, g) => {
                                 self = mb
                                     .call_once(())
                                     ._bind(box move |:pb| g
@@ -140,7 +141,7 @@ macro_rules! free_monad(
 
             #[allow(dead_code)]
             #[inline]
-            fn go<F>(mut self, f: F) -> X
+            pub fn go<F>(mut self, f: F) -> X
                 where
                     // f must be a Fn since we may call it many times
                     F: Fn($S<'a, $($ctx,)* Box<$Free<'a, $($ctx,)* X>>>)

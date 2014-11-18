@@ -18,10 +18,10 @@ impl<'a, X:'a> Trampoline<'a, X> {
 
 #[inline(always)]
 pub fn done<'a, X>(a: X) -> Trampoline<'a, X> {
-    Leaf(a)
+    Trampoline::Leaf(a)
 }
 
 #[inline(always)]
 pub fn more<'a, X>(ma:Lazy<'a, Trampoline<'a, X>>) -> Trampoline<'a, X> {
-    Nest(map(ma, |:tx: Trampoline<'a, _>| box tx))
+    Trampoline::Nest(map(ma, |:tx: Trampoline<'a, _>| box tx))
 }
