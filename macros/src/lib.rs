@@ -138,6 +138,7 @@ macro_rules! free_monad(
                 }}
             }
 
+            #[allow(dead_code)]
             #[inline]
             fn go<F>(mut self, f: F) -> X
                 where
