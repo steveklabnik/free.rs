@@ -3,6 +3,7 @@ macro_rules! monad(
     ($M:ident, $Sig:ident, $sig_map:ident, [ $($ctx:ident,)* ]) =>
     {
 
+        #[allow(dead_code)]
         struct Opaque(*const u8);
 
         // Leaf ~ Pure : a -> _M f a
@@ -20,6 +21,7 @@ macro_rules! monad(
 
         impl<'a $(,$ctx:'a)*> _M<'a, $($ctx,)* Opaque> {
             // NOTE: keep this in sync with bind
+            #[allow(dead_code)]
             #[inline]
             fn _bind<Y:'a>(
                 self,
@@ -41,12 +43,14 @@ macro_rules! monad(
 
         impl<'a $(,$ctx:'a)*, X:'a> _M<'a, $($ctx,)* X> {
             // NOTE: keep this in sync with _bind
+            #[allow(dead_code)]
             #[inline]
             fn bind<Y:'a, F:'a>(self, f: F) -> _M<'a, $($ctx,)* Y>
                 where
                 F: FnOnce(X) -> _M<'a, $($ctx,)* Y>,
             {
                 // calls std::mem::transmute
+                #[allow(dead_code)]
                 #[inline]
                 unsafe
                 fn lhs<'a $(,$ctx:'a)*, X:'a>(
@@ -68,6 +72,7 @@ macro_rules! monad(
                 }
 
                 // calls std::mem::transmute
+                #[allow(dead_code)]
                 #[inline]
                 unsafe
                 fn rhs<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(
@@ -95,6 +100,7 @@ macro_rules! monad(
                 }
             }
 
+            #[allow(dead_code)]
             #[inline]
             fn resume(
                 mut self,
@@ -128,6 +134,7 @@ macro_rules! monad(
                 }}
             }
 
+            #[allow(dead_code)]
             #[inline]
             fn go<F>(mut self, f: F) -> X
                 where
@@ -147,9 +154,11 @@ macro_rules! monad(
 
         }
 
+        #[allow(dead_code)]
         pub struct $M<'a $(,$ctx:'a)*, X:'a>(_M<'a, $($ctx,)* X>);
 
         impl<'a $(,$ctx:'a)*, X:'a> $M<'a, $($ctx,)* X> {
+            #[allow(dead_code)]
             #[inline]
             pub fn map<Y:'a, F:'a>(self, f: F) -> $M<'a, $($ctx,)* Y>
                 where
@@ -159,12 +168,14 @@ macro_rules! monad(
                 $M(m.bind(move |:x| _M::Leaf(f(x))))
             }
 
+            #[allow(dead_code)]
             #[inline]
             pub fn point(a: X) -> $M<'a, $($ctx,)* X> {
                 $M(_M::Leaf(a))
             }
 
             // NOTE: keep this in sync with _bind
+            #[allow(dead_code)]
             #[inline]
             pub fn bind<Y:'a, F:'a>(self, f: F) -> $M<'a, $($ctx,)* Y>
                 where
@@ -177,11 +188,13 @@ macro_rules! monad(
                 }))
             }
 
+            #[allow(dead_code)]
             #[inline]
             pub fn seq<Y:'a>(self, m: $M<'a, $($ctx,)* Y>) -> $M<'a, $($ctx,)* Y> {
                 self.bind(move |:_| m)
             }
 
+            #[allow(dead_code)]
             #[inline]
             pub fn resume(self) -> Result<X, $Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>> {
                 let $M(m0) = self;
@@ -195,6 +208,7 @@ macro_rules! monad(
                 }
             }
 
+            #[allow(dead_code)]
             #[inline]
             pub fn go<F>(self, f: F) -> X
                 where
@@ -210,11 +224,13 @@ macro_rules! monad(
 
         }
 
+        #[allow(dead_code)]
         #[inline]
         pub fn point<'a $(,$ctx:'a)*, X:'a>(a: X) -> $M<'a, $($ctx,)* X> {
             $M::point(a)
         }
 
+        #[allow(dead_code)]
         #[inline]
         pub fn bind<'a $(,$ctx:'a)*, X:'a, Y:'a, F:'a>(
             m: $M<'a, $($ctx,)* X>,
@@ -226,6 +242,7 @@ macro_rules! monad(
             m.bind(f)
         }
 
+        #[allow(dead_code)]
         #[inline]
         pub fn wrap<'a $(,$ctx:'a)*, X:'a>(
             sbmx: $Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>
