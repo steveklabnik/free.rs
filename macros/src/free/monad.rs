@@ -113,7 +113,7 @@ macro_rules! monad(
                             },
                             _M::Nest(t) => {
                                 return Err($sig_map(t,
-                                    move |:m:Box<_M<'a, $($ctx,)* _>>|
+                                    move |:m: Box<_M<'a, $($ctx,)* _>>|
                                         box m._bind(f)))
                             },
                             _M::Subs(mb, g) => {
@@ -190,7 +190,7 @@ macro_rules! monad(
                         Ok(a)
                     },
                     Err(sbmx) => {
-                        Err($sig_map(sbmx, |:bmx: Box<_M<'a, $($ctx,)* _>>| box $M(*bmx)))
+                        Err($sig_map(sbmx, |:bmx: Box<_>| box $M(*bmx)))
                     },
                 }
             }
@@ -203,9 +203,7 @@ macro_rules! monad(
             {
                 let $M(m0) = self;
                 m0.go(|&:sbmx| {
-                    let $M(m1) = f($sig_map(sbmx, |:bmx:Box<_M<'a, $($ctx,)* _>>| {
-                        box $M(*bmx)
-                    }));
+                    let $M(m1) = f($sig_map(sbmx, |:bmx: Box<_>| box $M(*bmx)));
                     m1
                 })
             }
@@ -232,7 +230,7 @@ macro_rules! monad(
         pub fn wrap<'a $(,$ctx:'a)*, X:'a>(
             sbmx: $Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>
         ) -> $M<'a, $($ctx,)* X> {
-            $M(_M::Nest($sig_map(sbmx, |:bmx: Box<$M<'a, $($ctx,)* _>>| {
+            $M(_M::Nest($sig_map(sbmx, |:bmx| {
                 let box $M(m) = bmx;
                 box m
             })))

@@ -23,5 +23,5 @@ pub fn done<'a, X>(a: X) -> Trampoline<'a, X> {
 
 #[inline(always)]
 pub fn more<'a, X>(ma: Sig<'a, Trampoline<'a, X>>) -> Trampoline<'a, X> {
-    wrap(map(ma, |:tx: Trampoline<'a, _>| box tx))
+    wrap(map(ma, |:tx| box tx))
 }
