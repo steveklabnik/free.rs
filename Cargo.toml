@@ -1,8 +1,14 @@
 [package]
 
-name    = "free"
+name = "free"
 version = "0.0.0"
 authors = [ "Darin Morrison <darinmorrison+epsilonz@gmail.com>" ]
+description = "Macro-based free monads in Rust"
+documentation = "http://www.rust-ci.org/epsilonz/free.rs/doc/free/"
+keywords = ["algebra", "category-theory", "functional-programming", "math", "monads", "stackless"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/epsilonz/free.rs"
 
 [dependencies.free_macros]
 path = "macros"
