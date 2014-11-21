@@ -4,6 +4,10 @@ Macro-based free monads in Rust
 
 [![build status](https://api.travis-ci.org/epsilonz/free.rs.svg?branch=master)](https://travis-ci.org/epsilonz/free.rs)
 
+## Synopsis
+
+This crate provides the machinery to create a free monad from a signature functor. See [monad](https://crates.io/crates/monad) for instances of concrete monads like `State`, `Reader`, etc.
+
 ## Documentation
 
 See the API documentation [here](http://www.rust-ci.org/epsilonz/free.rs/doc/free/).
