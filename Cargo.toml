@@ -12,9 +12,4 @@ repository = "https://github.com/epsilonz/free.rs"
 
 [dependencies.free_macros]
 path = "macros"
-
-# [dev-dependencies.quickcheck]
-# git = "https://github.com/BurntSushi/quickcheck"
-
-# [dev-dependencies.quickcheck_macros]
-# git = "https://github.com/BurntSushi/quickcheck"
+version = "~0.0.1"
