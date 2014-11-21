@@ -12,4 +12,4 @@ repository = "https://github.com/epsilonz/free.rs"
 
 [dependencies.free_macros]
 path = "macros"
-version = "~0.0.1"
+version = "*"
