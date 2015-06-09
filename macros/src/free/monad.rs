@@ -14,8 +14,8 @@ macro_rules! monad(
             Leaf(X),
             Nest($Sig<'a, $($ctx,)* Box<_M<'a, $($ctx,)* X>>>),
             Subs( // Coyoneda f a ~ forall i. (f i, i -> a)
-                Box<FnOnce<(), _M<'a, $($ctx,)* Opaque>> + 'a>,
-                Box<FnOnce<(Opaque,), _M<'a, $($ctx,)* X>> + 'a>,
+                Box<FnOnce() -> _M<'a, $($ctx,)* Opaque> + 'a>,
+                Box<FnOnce(Opaque,) -> _M<'a, $($ctx,)* X> + 'a>,
             ),
         }
 
@@ -25,16 +25,16 @@ macro_rules! monad(
             #[inline]
             fn _bind<Y:'a>(
                 self,
-                f: Box<FnOnce<(Opaque,), _M<'a, $($ctx,)* Y>> + 'a>,
+                f: Box<FnOnce(Opaque,) -> _M<'a, $($ctx,)* Y> + 'a>,
             ) -> _M<'a, $($ctx,)* Y> {
                 match self {
                     _M::Subs(m, g) => {
-                        _M::Subs(m, box move |:x|
-                            _M::Subs(box move |:|
+                        _M::Subs(m, box move |x|
+                            _M::Subs(box move ||
                                 g.call_once((x,)), f))
                     },
                     _ => {
-                        _M::Subs(box move |:|
+                        _M::Subs(box move ||
                             self, f)
                     },
                 }
@@ -61,11 +61,11 @@ macro_rules! monad(
                             _M::Leaf(::std::mem::transmute(box a))
                         },
                         _M::Nest(t) => {
-                            _M::Nest($sig_map(t, |:m2: Box<_>|
+                            _M::Nest($sig_map(t, |m2: Box<_>|
                                 box lhs(*m2)))
                         },
                         _M::Subs(m, f) => {
-                            _M::Subs(m, box move |:x|
+                            _M::Subs(m, box move |x|
                                 lhs(f.call_once((x,))))
                         },
                     }
@@ -81,20 +81,20 @@ macro_rules! monad(
                     where
                     F: FnOnce(X) -> _M<'a, $($ctx,)* Y>,
                 {
-                    box move |:ox|
+                    box move |ox|
                         f.call_once((*::std::mem::transmute::<_, Box<_>>(ox),))
                 }
 
                 // safe because we only coerce (m, f) with compatible types
                 match self {
                     _M::Subs(m, g) => {
-                        _M::Subs(m, box move |:x| unsafe {
-                            _M::Subs(box move |:|
+                        _M::Subs(m, box move |x| unsafe {
+                            _M::Subs(box move ||
                                 lhs(g.call_once((x,))), rhs(f))
                         })
                     },
                     _ => { unsafe {
-                        _M::Subs(box move |:|
+                        _M::Subs(box move ||
                             lhs(self), rhs(f))
                     }},
                 }
@@ -119,13 +119,13 @@ macro_rules! monad(
                             },
                             _M::Nest(t) => {
                                 return Err($sig_map(t,
-                                    move |:m: Box<_M<'a, $($ctx,)* _>>|
+                                    move |m: Box<_M<'a, $($ctx,)* _>>|
                                         box m._bind(f)))
                             },
                             _M::Subs(mb, g) => {
                                 self = mb
                                     .call_once(())
-                                    ._bind(box move |:pb| g
+                                    ._bind(box move |pb| g
                                         .call_once((pb,))
                                         ._bind(f))
                             },
@@ -165,7 +165,7 @@ macro_rules! monad(
                 F: FnOnce(X) -> Y,
             {
                 let $M(m) = self;
-                $M(m.bind(move |:x| _M::Leaf(f(x))))
+                $M(m.bind(move |x| _M::Leaf(f(x))))
             }
 
             #[allow(dead_code)]
@@ -182,7 +182,7 @@ macro_rules! monad(
                 F: FnOnce(X) -> $M<'a, $($ctx,)* Y>,
             {
                 let $M(m0) = self;
-                $M(m0.bind(move |:x| {
+                $M(m0.bind(move |x| {
                     let $M(m1) = f(x);
                     m1
                 }))
@@ -191,7 +191,7 @@ macro_rules! monad(
             #[allow(dead_code)]
             #[inline]
             pub fn seq<Y:'a>(self, m: $M<'a, $($ctx,)* Y>) -> $M<'a, $($ctx,)* Y> {
-                self.bind(move |:_| m)
+                self.bind(move |_| m)
             }
 
             #[allow(dead_code)]
@@ -203,7 +203,7 @@ macro_rules! monad(
                         Ok(a)
                     },
                     Err(sbmx) => {
-                        Err($sig_map(sbmx, |:bmx: Box<_>| box $M(*bmx)))
+                        Err($sig_map(sbmx, |bmx: Box<_>| box $M(*bmx)))
                     },
                 }
             }
@@ -216,8 +216,8 @@ macro_rules! monad(
                 F: Fn($Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>) -> $M<'a, $($ctx,)* X>,
             {
                 let $M(m0) = self;
-                m0.go(|&:sbmx| {
-                    let $M(m1) = f($sig_map(sbmx, |:bmx: Box<_>| box $M(*bmx)));
+                m0.go(|sbmx| {
+                    let $M(m1) = f($sig_map(sbmx, |bmx: Box<_>| box $M(*bmx)));
                     m1
                 })
             }
@@ -247,11 +247,11 @@ macro_rules! monad(
         pub fn wrap<'a $(,$ctx:'a)*, X:'a>(
             sbmx: $Sig<'a, $($ctx,)* Box<$M<'a, $($ctx,)* X>>>
         ) -> $M<'a, $($ctx,)* X> {
-            $M(_M::Nest($sig_map(sbmx, |:bmx| {
+            $M(_M::Nest($sig_map(sbmx, |bmx| {
                 let box $M(m) = bmx;
                 box m
             })))
         }
 
     };
-)
+);
